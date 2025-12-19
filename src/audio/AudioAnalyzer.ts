@@ -41,8 +41,8 @@ export class AudioAnalyzer {
 
       // 1. NATIVE ANALYSER (High Res for Peak Finding)
       this.nativeAnalyser = this.context.createAnalyser();
-      this.nativeAnalyser.fftSize = 2048; // Higher resolution for better frequency detection
-      this.nativeAnalyser.smoothingTimeConstant = 0.2;
+      this.nativeAnalyser.fftSize = 2048;
+      this.nativeAnalyser.smoothingTimeConstant = 0.75;
       this.source.connect(this.nativeAnalyser);
 
       this.dataArray = new Uint8Array(this.nativeAnalyser.frequencyBinCount);

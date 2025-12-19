@@ -10,9 +10,11 @@ import './App.css';
 function App() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
-  const [selectedColor, setSelectedColor] = useState('#00ffcc');
-  const [structureColor, setStructureColor] = useState('#ffffff');
-  const [backgroundColor, setBackgroundColor] = useState('#020202');
+  const [selectedColor, setSelectedColor] = useState('#ede5ff');
+  const [structureColor, setStructureColor] = useState('#d96363');
+  const [backgroundColor, setBackgroundColor] = useState('#020b0d');
+  const [lineWeight, setLineWeight] = useState(1.0);
+  const [turbulence, setTurbulence] = useState(0.0);
   const [analyzer, setAnalyzer] = useState<AudioAnalyzer | null>(null);
   const [signalLevel, setSignalLevel] = useState(0);
 
@@ -83,6 +85,8 @@ function App() {
             analyzer={analyzer}
             trailColor={selectedColor}
             structureColor={structureColor}
+            lineWeight={lineWeight}
+            turbulence={turbulence}
           />
 
           <OrbitControls
@@ -141,6 +145,24 @@ function App() {
           </div>
 
           <div className="bottom-bar">
+            {/* Visual Controls */}
+            <div className="slider-group">
+              <div className="slider-item">
+                <span className="picker-label">WEIGHT</span>
+                <input
+                  type="range" min="0.1" max="5" step="0.1"
+                  value={lineWeight} onChange={e => setLineWeight(parseFloat(e.target.value))}
+                />
+              </div>
+              <div className="slider-item">
+                <span className="picker-label">WAVE</span>
+                <input
+                  type="range" min="0" max="1" step="0.01"
+                  value={turbulence} onChange={e => setTurbulence(parseFloat(e.target.value))}
+                />
+              </div>
+            </div>
+
             <div className="color-pickers">
               <div className="color-picker-item">
                 <span className="picker-label">COMET</span>

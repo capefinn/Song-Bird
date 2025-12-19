@@ -1,30 +1,33 @@
-import { useRef, useMemo } from 'react';
+import { useRef, useMemo, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Vector3, Group, Mesh, Color, BufferGeometry } from 'three';
-import { Text, Sphere, Float } from '@react-three/drei';
+import { Vector3, Group, Mesh, Color } from 'three';
+import { Text, Sphere, Float, Line } from '@react-three/drei';
 import type { AudioAnalyzer } from '../audio/AudioAnalyzer';
 
 const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
 export function GenerativeStructure({
     analyzer,
-    trailColor = "#00ffcc",
-    structureColor = "#ffffff"
-}: { analyzer: AudioAnalyzer | null, trailColor?: string, structureColor?: string }) {
+    trailColor = "#ede5ff",
+    structureColor = "#d96363",
+    lineWeight = 1.0,
+    turbulence = 0.0
+}: {
+    analyzer: AudioAnalyzer | null,
+    trailColor?: string,
+    structureColor?: string,
+    lineWeight?: number,
+    turbulence?: number
+}) {
     const groupRef = useRef<Group>(null);
     const cursorRef = useRef(new Vector3(0, 0, 0));
     const fireflyRef = useRef<Mesh>(null);
     const lightRef = useRef<any>(null);
     const anchorRefs = useRef<(Group | null)[]>([]);
 
-    // Geometry Refs (High Performance, No State)
-    const cometGeoRef = useRef<BufferGeometry>(null);
-    const structureGeoRef = useRef<BufferGeometry>(null);
-
-    // Data Buffers
-    const cometPositions = useMemo(() => new Float32Array(150 * 3).fill(0), []);
-    const structurePositions = useMemo(() => new Float32Array(2000 * 3).fill(0), []);
-    const structureIdx = useRef(0);
+    // Trail Points (Using state for Line components compatibility)
+    const [cometPoints, setCometPoints] = useState<Vector3[]>([]);
+    const [structurePoints, setStructurePoints] = useState<Vector3[]>([]);
 
     const lastNoteRef = useRef(-1);
     const currentLabel = useRef("LISTENING...");
@@ -56,18 +59,23 @@ export function GenerativeStructure({
         const features = analyzer.getFeatures();
         if (!freqData) return;
 
-        // 2. STABLE PEAK DETECTION
+        // 2. STABLE PEAK DETECTION (With Noise Rejection)
         let maxVal = 0;
         let maxBin = -1;
+        let avgVal = 0;
+
         for (let i = 10; i < freqData.length / 2; i++) {
+            avgVal += freqData[i];
             if (freqData[i] > maxVal) { maxVal = freqData[i]; maxBin = i; }
         }
+        avgVal /= (freqData.length / 2);
 
         let targetPos = new Vector3(0, 0, 0);
         let isNoteLocked = false;
         let activeColor = new Color(trailColor);
 
-        if (maxVal > 40 && maxBin > 0) {
+        // Confidence check
+        if (maxVal > 70 && maxVal > avgVal * 2.5 && maxBin > 0) {
             const nyquist = analyzer.getSampleRate() / 2;
             const freq = maxBin * (nyquist / freqData.length);
 
@@ -109,40 +117,36 @@ export function GenerativeStructure({
             }
         });
 
-        // 4. BUFFER UPDATES
-        const cp = cursorRef.current;
+        // 4. TRAIL UPDATES
+        const cp = cursorRef.current.clone();
 
-        // Comet Head (Shift buffer)
-        for (let i = 149; i > 0; i--) {
-            cometPositions[i * 3] = cometPositions[(i - 1) * 3];
-            cometPositions[i * 3 + 1] = cometPositions[(i - 1) * 3 + 1];
-            cometPositions[i * 3 + 2] = cometPositions[(i - 1) * 3 + 2];
+        // Apply Waviness to the incoming point (Much more aggressive now)
+        if (turbulence > 0) {
+            const t = state.clock.getElapsedTime();
+            cp.y += Math.sin(t * 8 + cp.x * 0.4) * (turbulence * 12.0);
+            cp.x += Math.cos(t * 7 + cp.z * 0.4) * (turbulence * 14.0);
+            cp.z += Math.sin(t * 6 + cp.y * 0.4) * (turbulence * 8.0);
         }
-        cometPositions[0] = cp.x; cometPositions[1] = cp.y; cometPositions[2] = cp.z;
-        if (cometGeoRef.current) cometGeoRef.current.attributes.position.needsUpdate = true;
+
+        // Comet Head
+        setCometPoints(prev => [...prev, cp].slice(-80));
 
         // Structure Map
-        const lastIdx = (structureIdx.current === 0 ? 1999 : structureIdx.current - 1) * 3;
-        const distToLast = Math.hypot(cp.x - structurePositions[lastIdx], cp.y - structurePositions[lastIdx + 1], cp.z - structurePositions[lastIdx + 2]);
-
-        if (distToLast > 0.3) {
-            structurePositions[structureIdx.current * 3] = cp.x;
-            structurePositions[structureIdx.current * 3 + 1] = cp.y;
-            structurePositions[structureIdx.current * 3 + 2] = cp.z;
-            structureIdx.current = (structureIdx.current + 1) % 2000;
-            if (structureGeoRef.current) structureGeoRef.current.attributes.position.needsUpdate = true;
+        const lastS = structurePoints[structurePoints.length - 1];
+        if (!lastS || cp.distanceTo(lastS) > 0.4) {
+            setStructurePoints(prev => [...prev, cp].slice(-1500));
         }
 
         // 5. FIREFLY
         if (fireflyRef.current) {
-            fireflyRef.current.position.copy(cp);
-            const s = 0.06 + (volume * 0.4);
+            fireflyRef.current.position.copy(cursorRef.current);
+            const s = 0.08 + (volume * 0.5);
             fireflyRef.current.scale.set(s, s, s);
             (fireflyRef.current.material as any).color.copy(activeColor);
         }
         if (lightRef.current) {
-            lightRef.current.position.copy(cp);
-            lightRef.current.intensity = 15 + (volume * 60);
+            lightRef.current.position.copy(cursorRef.current);
+            lightRef.current.intensity = 20 + (volume * 100);
             lightRef.current.color.copy(activeColor);
         }
 
@@ -173,27 +177,27 @@ export function GenerativeStructure({
             </mesh>
             <pointLight ref={lightRef} distance={100} decay={2} />
 
-            {/* COMET HEAD (Low-level line) */}
-            <line>
-                <bufferGeometry ref={cometGeoRef}>
-                    <bufferAttribute
-                        attach="attributes-position"
-                        args={[cometPositions, 3]}
-                    />
-                </bufferGeometry>
-                <lineBasicMaterial color={trailColor} linewidth={2} transparent opacity={0.6} />
-            </line>
+            {/* COMET HEAD (drei Line for real width) */}
+            {cometPoints.length > 2 && (
+                <Line
+                    points={cometPoints}
+                    color={trailColor}
+                    lineWidth={lineWeight * 6}
+                    transparent
+                    opacity={0.7}
+                />
+            )}
 
-            {/* STRUCTURE MAP (Low-level line) */}
-            <line>
-                <bufferGeometry ref={structureGeoRef}>
-                    <bufferAttribute
-                        attach="attributes-position"
-                        args={[structurePositions, 3]}
-                    />
-                </bufferGeometry>
-                <lineBasicMaterial color={structureColor} transparent opacity={0.1} />
-            </line>
+            {/* STRUCTURE MAP (drei Line for real width) */}
+            {structurePoints.length > 2 && (
+                <Line
+                    points={structurePoints}
+                    color={structureColor}
+                    lineWidth={lineWeight * 0.8}
+                    transparent
+                    opacity={0.15}
+                />
+            )}
 
             <Text position={[0, -28, 0]} fontSize={1.5} color="white" fillOpacity={0.05}>
                 {currentLabel.current}
