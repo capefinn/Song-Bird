@@ -144,6 +144,21 @@ h1 {
   letter-spacing: 0.1rem;
 }
 
+.contact-link {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.6rem;
+  color: white;
+  opacity: 0.3;
+  text-decoration: none;
+  letter-spacing: 0.1rem;
+  transition: opacity 0.3s ease;
+  margin-left: 1rem;
+}
+
+.contact-link:hover {
+  opacity: 0.8;
+}
+
 .bottom-bar {
   position: absolute;
   bottom: 2rem;

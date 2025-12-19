@@ -178,7 +178,9 @@ function App() {
                 <RefreshCw size={24} />
               </button>
             </div>
-            <div style={{ width: 40 }} />
+            <a href="mailto:leandro@makexmedia.fi" className="contact-link">
+              leandro@makexmedia.fi
+            </a>
           </div>
         </>
       )}
