@@ -1,73 +1,57 @@
-# React + TypeScript + Vite
+# 🕊️ SONG BIRD: Spectral Architecture
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**Song Bird** is an immersive, high-fidelity 3D audio visualizer inspired by technical drawing, mechanical precision, and the "Spectral Architecture" of artists like Lucio Arese. It transforms sound into a living, structural constellation.
 
-Currently, two official plugins are available:
+## 🌌 The Vision
+Unlike traditional visualizers that react with "soft" waves, **Song Bird** uses a "Zipping" engine. It maps the frequency peaks of your audio to 12 sentient anchors (Musical Notes) in a deep 3D nebula. 
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+As the music moves, a high-velocity **Firefly Tracer** zips between these anchors, leaving a brilliant "Comet" tail that gradually "cools" into a permanent white structural map of the song's skeleton.
 
-## React Compiler
+## ✨ Key Features
+- **Sentient 3D Constellation**: 12 Note-anchors that drift organically and glow intensely when approached.
+- **Dual-Layer Trails**: High-intensity "Comet" tracers that fade into a persistent "Structure Map."
+- **Surgical Pitch Accuracy**: Custom-built FFT peak resolver for mechanical note-locking, even in noisy environments.
+- **GPU-Accelerated Performance**: Built with naked Buffer Geometries to ensure 60FPS fluid motion without crashing.
+- **Customizable Void**: Independent technical selectors for Comet color, Structure color, and Background Void.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 🛠️ Technical Stack
+- **Engine**: [Three.js](https://threejs.org/) + [React Three Fiber](https://r3f.docs.pmnd.rs/)
+- **Audio Processing**: Web Audio API (Manual FFT) + [Meyda](https://meyda.js.org/)
+- **Bundler**: [Vite](https://vitejs.dev/)
+- **Language**: TypeScript
 
-## Expanding the ESLint configuration
+## 🚀 Installation & Setup
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/capefinn/Song-Bird.git
+   cd Song-Bird
+   ```
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+3. **Start the development server:**
+   ```bash
+   npm run dev
+   ```
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+4. **Open your browser:**
+   Navigate to `http://localhost:5173/` (or the port shown in your terminal).
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## 🎛️ How to Use
+1. **Live Mode**: Click the **MIC** button to allow the visualizer to listen to your surroundings (Instruments, Voice, or Speakers).
+2. **Upload Mode**: Click **UPLOAD** to drop an MP3/WAV file directly into the constellation.
+3. **Controls**: Use the bottom technical bar to adjust the Comet trail color, the persistence map color, and the background "atmosphere" color.
+4. **Orbit**: Click and drag on the screen to rotate through the 3D nebula. Use the scroll wheel to zoom into the specific note nodes.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## 📡 Deployment
+This project is optimized for deployment on **[Vercel](https://vercel.com/)**.
+1. Connect your GitHub repository to Vercel.
+2. Ensure the framework preset is set to **Vite**.
+3. Push to `main` to trigger an automatic build.
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+---
+*Created with surgical precision.*
