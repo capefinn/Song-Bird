@@ -102,7 +102,11 @@ function App() {
       {!hasStarted && (
         <div className="start-overlay">
           <h1>SONG BIRD</h1>
-          <p className="technical-label">V.5 SPECTRAL ARCHITECTURE</p>
+          <p className="technical-label">V.7 SPECTRAL ARCHITECTURE</p>
+          <p className="simple-intro">
+            An immersive 3D space where music becomes light. <br />
+            Speak, sing, or upload a track to watch it become a living constellation of zipping tracers.
+          </p>
           <div className="start-actions">
             <button className="big-start-btn" onClick={() => startAudio()}>
               <Mic size={24} style={{ marginRight: 10 }} /> LIVE
