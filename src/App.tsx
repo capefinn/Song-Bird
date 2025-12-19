@@ -16,9 +16,11 @@ function App() {
   const [lineWeight, setLineWeight] = useState(1.0);
   const [turbulence, setTurbulence] = useState(0.0);
   const [analyzer, setAnalyzer] = useState<AudioAnalyzer | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
   const [signalLevel, setSignalLevel] = useState(0);
 
   const audioElRef = useRef<HTMLAudioElement | null>(null);
+  const recorderRef = useRef<MediaRecorder | null>(null);
 
   useEffect(() => {
     if (!hasStarted || !analyzer) return;
@@ -35,7 +37,7 @@ function App() {
     return () => cancelAnimationFrame(frameId);
   }, [hasStarted, analyzer]);
 
-  const startAudio = async (file?: File) => {
+  const startAudio = async (file?: File | string) => {
     try {
       const newAnalyzer = new AudioAnalyzer();
 
@@ -45,9 +47,10 @@ function App() {
       }
 
       let audioEl: HTMLAudioElement | undefined;
-      if (file) {
-        const url = URL.createObjectURL(file);
+      if (file || typeof file === 'string') {
+        const url = typeof file === 'string' ? file : URL.createObjectURL(file as File);
         audioEl = new Audio(url);
+        audioEl.crossOrigin = "anonymous"; // Needed for remote demos
         audioEl.loop = true;
         audioElRef.current = audioEl;
       }
@@ -72,10 +75,69 @@ function App() {
 
   const reset = () => window.location.reload();
 
+  const handleRecord = async () => {
+    if (isRecording && recorderRef.current) {
+      recorderRef.current.stop();
+      return;
+    }
+
+    const canvas = document.querySelector('canvas');
+    if (!canvas || !analyzer) return;
+
+    setIsRecording(true);
+
+    // Capture Visuals
+    const videoStream = canvas.captureStream(60);
+
+    // If the above fails, try to get the audio from the context directly
+    let finalStream = videoStream;
+    try {
+      const mergedStream = new MediaStream();
+      videoStream.getVideoTracks().forEach((track: MediaStreamTrack) => mergedStream.addTrack(track));
+
+      const audioCtx = (analyzer as any).context;
+      const streamDest = audioCtx.createMediaStreamDestination();
+      (analyzer as any).source.connect(streamDest);
+      streamDest.stream.getAudioTracks().forEach((track: MediaStreamTrack) => mergedStream.addTrack(track));
+
+      finalStream = mergedStream;
+    } catch (e) {
+      console.warn("Audio Capture limited:", e);
+    }
+
+    const recorder = new MediaRecorder(finalStream, {
+      mimeType: 'video/webm;codecs=vp9,opus',
+      videoBitsPerSecond: 8000000 // 8Mbps - High Quality
+    });
+    recorderRef.current = recorder;
+    const chunks: Blob[] = [];
+
+    recorder.ondataavailable = (e) => chunks.push(e.data);
+    recorder.onstop = () => {
+      const blob = new Blob(chunks, { type: 'video/mp4' }); // Use MP4 container for better compatibility
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `songbird-hi-quality-${Date.now()}.mp4`;
+      a.click();
+      setIsRecording(false);
+      recorderRef.current = null;
+    };
+
+    recorder.start();
+
+    // Restore 15s Cap
+    setTimeout(() => {
+      if (recorderRef.current && recorderRef.current.state === 'recording') {
+        recorderRef.current.stop();
+      }
+    }, 15000);
+  };
+
   return (
     <div className="app-container">
       <div className="canvas-wrapper">
-        <Canvas gl={{ antialias: true, alpha: false, depth: true }}>
+        <Canvas gl={{ antialias: true, alpha: false, depth: true, preserveDrawingBuffer: true }}>
           <PerspectiveCamera makeDefault position={[0, 0, 70]} fov={50} />
           <color attach="background" args={[backgroundColor]} />
           <ambientLight intensity={0.1} />
@@ -198,6 +260,13 @@ function App() {
               </button>
               <button className="control-btn" onClick={reset}>
                 <RefreshCw size={24} />
+              </button>
+              <button
+                className={`control-btn ${isRecording ? 'recording' : ''}`}
+                onClick={handleRecord}
+                disabled={isRecording}
+              >
+                {isRecording ? 'REC...' : 'RECORD'}
               </button>
             </div>
             <a href="mailto:leandro@makexmedia.fi" className="contact-link">

@@ -91,6 +91,7 @@ export class AudioAnalyzer {
 
   getFeatures(): AudioFeatures | null { return this.latestFeatures; }
   getState(): string { return this.context.state; }
+  getDestination(): AudioNode { return this.context.destination; }
 
   async stop() {
     if (this.analyzer) this.analyzer.stop();

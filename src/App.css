@@ -52,12 +52,13 @@ html,
 }
 
 h1 {
-  font-size: 5rem;
-  letter-spacing: 1.5rem;
+  font-size: clamp(2rem, 10vw, 5rem);
+  letter-spacing: clamp(0.5rem, 3vw, 1.5rem);
   margin: 0;
   font-weight: 200;
   color: white;
   text-shadow: 0 0 20px rgba(237, 229, 255, 0.3);
+  text-align: center;
 }
 
 .technical-label {
@@ -81,8 +82,10 @@ h1 {
 
 .start-actions {
   display: flex;
-  gap: 2rem;
-  margin-top: 4rem;
+  gap: 1.5rem;
+  margin-top: 3rem;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 .big-start-btn {
@@ -161,19 +164,49 @@ h1 {
 
 .bottom-bar {
   position: absolute;
-  bottom: 2rem;
+  bottom: 1.5rem;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
   align-items: center;
-  gap: 3rem;
-  background: rgba(10, 10, 10, 0.8);
+  gap: 1.5rem;
+  background: rgba(10, 10, 10, 0.85);
   backdrop-filter: blur(20px);
-  padding: 0.8rem 2rem;
+  padding: 0.6rem 1.5rem;
   border-radius: 100px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   z-index: 20;
+  max-width: 95vw;
 }
+
+@media (max-width: 900px) {
+  .bottom-bar {
+    border-radius: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+    bottom: 1rem;
+    gap: 1rem;
+    padding: 1rem;
+  }
+
+  .slider-group {
+    border-right: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-right: 0;
+    padding-bottom: 0.5rem;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .color-pickers {
+    gap: 1rem;
+  }
+
+  h1 {
+    letter-spacing: 0.5rem;
+  }
+}
+
 
 .slider-group {
   display: flex;
@@ -214,6 +247,32 @@ input[type="range"] {
   color: white;
   opacity: 0.6;
   letter-spacing: 0.1rem;
+}
+
+
+
+.control-btn.recording {
+  color: white;
+  opacity: 1;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+  animation: pulse-ring 2s infinite;
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+
+  50% {
+    transform: scale(1.05);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
 }
 
 .control-group {
