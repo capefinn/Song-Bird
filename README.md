@@ -53,5 +53,4 @@ This project is optimized for deployment on **[Vercel](https://vercel.com/)**.
 2. Ensure the framework preset is set to **Vite**.
 3. Push to `main` to trigger an automatic build.
 
----
-*Created with surgical precision.*
+
