@@ -18,7 +18,6 @@ function App() {
   const turbulence = 0.0;
   const [analyzer, setAnalyzer] = useState<AudioAnalyzer | null>(null);
   const [isRecording, setIsRecording] = useState(false);
-  const [signalLevel, setSignalLevel] = useState(0);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [identifiedBird, setIdentifiedBird] = useState<BirdSpecies | null>(null);
   const [confidence, setConfidence] = useState(0);
@@ -42,7 +41,6 @@ function App() {
     let frameId: number;
     const checkSignal = () => {
       const vol = analyzer.getRawVolume();
-      setSignalLevel(vol * 100);
 
       // Bird Identification Logic
       if (vol > 0.05) {
@@ -299,17 +297,6 @@ function App() {
 
       {hasStarted && (
         <>
-          <div className="signal-monitor">
-            <Activity size={14} style={{ marginRight: 8, opacity: 0.5 }} />
-            <div className="signal-bar-bg">
-              <div
-                className="signal-bar-fill"
-                style={{ width: `${Math.min(100, signalLevel)}%`, background: selectedColor }}
-              />
-            </div>
-            <span className="status-label">{analyzer?.getState().toUpperCase()}</span>
-          </div>
-
           <button
             className={`hamburger-btn ${isMenuOpen ? 'open' : ''}`}
             onClick={() => setIsMenuOpen(!isMenuOpen)}
