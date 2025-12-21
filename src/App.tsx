@@ -4,7 +4,7 @@ import { OrbitControls, PerspectiveCamera } from '@react-three/drei';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import { AudioAnalyzer } from './audio/AudioAnalyzer';
 import { GenerativeStructure } from './components/GenerativeStructure';
-import { Play, Pause, Upload, Mic, RefreshCw, Activity, Menu, X, Bird, ShieldCheck } from 'lucide-react';
+import { Play, Pause, Upload, Mic, RefreshCw, Activity, Menu, X, Bird, ShieldCheck, Music } from 'lucide-react';
 import { BIRD_SPECIES, type BirdSpecies } from './constants/species';
 import './App.css';
 
@@ -23,6 +23,7 @@ function App() {
   const [identifiedBird, setIdentifiedBird] = useState<BirdSpecies | null>(null);
   const [confidence, setConfidence] = useState(0);
   const [formation, setFormation] = useState<'ORBIT' | 'PHYLLOTAXIS' | 'FRACTAL'>('ORBIT');
+  const [symphonicMode, setSymphonicMode] = useState(false);
 
   const lastMatchTimeRef = useRef<number>(0);
   const audioElRef = useRef<HTMLAudioElement | null>(null);
@@ -185,6 +186,7 @@ function App() {
             lineWeight={lineWeight}
             turbulence={turbulence}
             formation={formation}
+            symphonicMode={symphonicMode}
           />
 
           <OrbitControls
@@ -335,6 +337,13 @@ function App() {
             <div className="control-group">
               <button className="control-btn" onClick={togglePause}>
                 {isPlaying ? <Pause size={24} /> : <Play size={24} />}
+              </button>
+              <button
+                className={`control-btn ${symphonicMode ? 'active' : ''}`}
+                onClick={() => setSymphonicMode(!symphonicMode)}
+                title="SYMPHONIC MODE: Optimized for Music"
+              >
+                <Music size={24} />
               </button>
               <button className="control-btn" onClick={reset}>
                 <RefreshCw size={24} />

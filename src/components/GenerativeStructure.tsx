@@ -12,14 +12,16 @@ export function GenerativeStructure({
     structureColor = "#d96363",
     lineWeight = 1.0,
     turbulence = 0.0,
-    formation = 'ORBIT'
+    formation = 'ORBIT',
+    symphonicMode = false
 }: {
     analyzer: AudioAnalyzer | null,
     trailColor?: string,
     structureColor?: string,
     lineWeight?: number,
     turbulence?: number,
-    formation?: 'ORBIT' | 'PHYLLOTAXIS' | 'FRACTAL'
+    formation?: 'ORBIT' | 'PHYLLOTAXIS' | 'FRACTAL',
+    symphonicMode?: boolean
 }) {
     const groupRef = useRef<Group>(null);
     const cursorRef = useRef(new Vector3(0, 0, 0));
@@ -89,38 +91,73 @@ export function GenerativeStructure({
         const features = analyzer.getFeatures();
         if (!freqData) return;
 
-        // 2. STABLE PEAK DETECTION (With Noise Rejection)
-        let maxVal = 0;
-        let maxBin = -1;
-        let avgVal = 0;
-
-        for (let i = 10; i < freqData.length / 2; i++) {
-            avgVal += freqData[i];
-            if (freqData[i] > maxVal) { maxVal = freqData[i]; maxBin = i; }
-        }
-        avgVal /= (freqData.length / 2);
-
         let targetPos = new Vector3(0, 0, 0);
         let isNoteLocked = false;
         let activeColor = new Color(trailColor);
 
-        // Confidence check
-        if (maxVal > 70 && maxVal > avgVal * 2.5 && maxBin > 0) {
-            const nyquist = analyzer.getSampleRate() / 2;
-            const freq = maxBin * (nyquist / freqData.length);
+        // 2. MUSICAL LOGIC (PEAK vs CHROMA)
+        if (symphonicMode && features?.chroma) {
+            // SYMPHONIC MODE: Weighted Harmonic Influence
+            const chroma = features.chroma;
+            let maxChroma = 0;
+            let primaryNote = 0;
 
-            if (freq > 0) {
-                const midi = Math.round(12 * Math.log2(freq / 440) + 69);
-                const dNote = (midi % 12 + 12) % 12;
+            // Influence the target position by all active notes
+            const weightedPos = new Vector3(0, 0, 0);
+            let totalWeight = 0;
 
+            chroma.forEach((val, i) => {
+                if (val > maxChroma) { maxChroma = val; primaryNote = i; }
+
+                // Boost contribution of cleaner notes
+                const weight = Math.pow(val, 2);
+                weightedPos.add(anchors[i].pos.clone().multiplyScalar(weight));
+                totalWeight += weight;
+
+                // Animate anchors based on Chroma (Holographic Resonance)
+                const ref = anchorRefs.current[i];
+                if (ref) {
+                    const mesh = ref.children[0] as Mesh;
+                    const scale = 1 + (val * 12);
+                    mesh.scale.lerp(new Vector3(scale, scale, scale), 0.2);
+                    (mesh.material as any).opacity = 0.05 + (val * 0.9);
+                }
+            });
+
+            if (totalWeight > 0.01) {
+                targetPos.copy(weightedPos.divideScalar(totalWeight));
                 isNoteLocked = true;
-                const anchor = anchors[dNote];
-                targetPos.copy(anchor.pos).multiplyScalar(1 + (volume * 0.1));
-                targetPos.y += (features?.spectralCentroid ? (features.spectralCentroid / 200) - 20 : 0);
+                activeColor.copy(new Color(anchors[primaryNote].color));
+            }
+        } else {
+            // BIRD MODE: Surgical Single Peak
+            let maxVal = 0;
+            let maxBin = -1;
+            let avgVal = 0;
 
-                activeColor.copy(new Color(anchor.color)).lerp(new Color(trailColor), 0.3);
-                currentLabel.current = NOTE_NAMES[dNote];
-                lastNoteRef.current = dNote;
+            for (let i = 10; i < freqData.length / 2; i++) {
+                avgVal += freqData[i];
+                if (freqData[i] > maxVal) { maxVal = freqData[i]; maxBin = i; }
+            }
+            avgVal /= (freqData.length / 2);
+
+            if (maxVal > 70 && maxVal > avgVal * 2.5 && maxBin > 0) {
+                const nyquist = analyzer.getSampleRate() / 2;
+                const freq = maxBin * (nyquist / freqData.length);
+
+                if (freq > 0) {
+                    const midi = Math.round(12 * Math.log2(freq / 440) + 69);
+                    const dNote = (midi % 12 + 12) % 12;
+
+                    isNoteLocked = true;
+                    const anchor = anchors[dNote];
+                    targetPos.copy(anchor.pos).multiplyScalar(1 + (volume * 0.1));
+                    targetPos.y += (features?.spectralCentroid ? (features.spectralCentroid / 200) - 20 : 0);
+
+                    activeColor.copy(new Color(anchor.color)).lerp(new Color(trailColor), 0.3);
+                    currentLabel.current = NOTE_NAMES[dNote];
+                    lastNoteRef.current = dNote;
+                }
             }
         }
 
