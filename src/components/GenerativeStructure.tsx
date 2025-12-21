@@ -15,7 +15,8 @@ export function GenerativeStructure({
     formation = 'ORBIT',
     symphonicMode = false,
     particleColor = '#4cc9f0',
-    particleSize = 0.2
+    particleSize = 0.2,
+    handData = null
 }: {
     analyzer: AudioAnalyzer | null,
     trailColor?: string,
@@ -25,10 +26,12 @@ export function GenerativeStructure({
     formation?: 'ORBIT' | 'PHYLLOTAXIS' | 'FRACTAL',
     symphonicMode?: boolean,
     particleColor?: string,
-    particleSize?: number
+    particleSize?: number,
+    handData?: any // import { HandData } from './HandTracker' would be better if we could
 }) {
     const groupRef = useRef<Group>(null);
     const particleGroupRef = useRef<any>(null);
+    const handTargetRef = useRef(new Vector3(0, 0, 0));
     const cursorRef = useRef(new Vector3(0, 0, 0));
     const fireflyRef = useRef<Mesh>(null);
     const lightRef = useRef<any>(null);
@@ -124,11 +127,42 @@ export function GenerativeStructure({
             for (let i = 0; i < particles.positions.length / 3; i++) {
                 const i3 = i * 3;
                 const offset = particles.drift[i];
-                // Organic drift + volume reaction
-                const reaction = volume * 1.5;
-                positions[i3] += Math.sin(time * 0.2 + offset) * 0.05 + (Math.random() - 0.5) * reaction;
-                positions[i3 + 1] += Math.cos(time * 0.3 + offset) * 0.05 + (Math.random() - 0.5) * reaction;
-                positions[i3 + 2] += Math.sin(time * 0.25 + offset) * 0.05 + (Math.random() - 0.5) * reaction;
+
+                // Base organic drift
+                let dx = Math.sin(time * 0.2 + offset) * 0.05;
+                let dy = Math.cos(time * 0.3 + offset) * 0.05;
+                let dz = Math.sin(time * 0.25 + offset) * 0.05;
+
+                // Hand Interaction: Grow dense (compress) or expand
+                if (handData?.isVisible) {
+                    const px = particles.positions[i3];
+                    const py = particles.positions[i3 + 1];
+                    const pz = particles.positions[i3 + 2];
+
+                    // Compression factor: handData.distance (0 to 1) 
+                    // When small (hands together), pull towards center of the "mass"
+                    const factor = 1.0 - handData.distance; // 1 = together, 0 = apart
+                    const pull = 0.02 * factor;
+
+                    positions[i3] += (0 - px) * pull;
+                    positions[i3 + 1] += (0 - py) * pull;
+                    positions[i3 + 2] += (0 - pz) * pull;
+
+                    // Move the mass center smoothly towards hand position
+                    handTargetRef.current.lerp(new Vector3(
+                        handData.center.x * 100,
+                        handData.center.y * 100,
+                        (handData.center.z || 0) * 100
+                    ), 0.1);
+                    particleGroupRef.current.position.copy(handTargetRef.current);
+                } else {
+                    // Return to center when no hands
+                    particleGroupRef.current.position.lerp(new Vector3(0, 0, 0), 0.05);
+                }
+
+                positions[i3] += dx + (Math.random() - 0.5) * volume * 1.5;
+                positions[i3 + 1] += dy + (Math.random() - 0.5) * volume * 1.5;
+                positions[i3 + 2] += dz + (Math.random() - 0.5) * volume * 1.5;
             }
             particleGroupRef.current.geometry.attributes.position.needsUpdate = true;
             particleGroupRef.current.rotation.y += delta * 0.05;

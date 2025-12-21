@@ -4,7 +4,8 @@ import { OrbitControls, PerspectiveCamera } from '@react-three/drei';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import { AudioAnalyzer } from './audio/AudioAnalyzer';
 import { GenerativeStructure } from './components/GenerativeStructure';
-import { Play, Pause, Upload, Mic, RefreshCw, Activity, Menu, X, Bird, ShieldCheck, Music } from 'lucide-react';
+import { HandTracker, type HandData } from './components/HandTracker';
+import { Play, Pause, Upload, Mic, RefreshCw, Activity, Menu, X, Bird, ShieldCheck, Music, Hand } from 'lucide-react';
 import { BIRD_SPECIES, type BirdSpecies } from './constants/species';
 import './App.css';
 
@@ -14,8 +15,8 @@ function App() {
   const [selectedColor, setSelectedColor] = useState('#ede5ff');
   const [structureColor, setStructureColor] = useState('#d96363');
   const [backgroundColor, setBackgroundColor] = useState('#020b0d');
-  const [lineWeight, setLineWeight] = useState(0.5);
-  const [turbulence, setTurbulence] = useState(0.0);
+  const [lineWeight] = useState(0.5);
+  const [turbulence] = useState(0.0);
   const [analyzer, setAnalyzer] = useState<AudioAnalyzer | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [signalLevel, setSignalLevel] = useState(0);
@@ -26,6 +27,8 @@ function App() {
   const [symphonicMode, setSymphonicMode] = useState(false);
   const [particleColor, setParticleColor] = useState('#4cc9f0');
   const [particleSize, setParticleSize] = useState(0.2);
+  const [isHandActive, setIsHandActive] = useState(false);
+  const [handData, setHandData] = useState<HandData>({ isVisible: false, distance: 1, center: { x: 0, y: 0, z: 0 } });
 
   const lastMatchTimeRef = useRef<number>(0);
   const audioElRef = useRef<HTMLAudioElement | null>(null);
@@ -191,7 +194,10 @@ function App() {
             symphonicMode={symphonicMode}
             particleColor={particleColor}
             particleSize={particleSize}
+            handData={isHandActive ? handData : null}
           />
+
+          {isHandActive && <HandTracker onHandUpdate={setHandData} />}
 
           <OrbitControls
             enablePan={false}
@@ -349,6 +355,13 @@ function App() {
                 title="SYMPHONIC MODE: Optimized for Music"
               >
                 <Music size={24} />
+              </button>
+              <button
+                className={`control-btn ${isHandActive ? 'active' : ''}`}
+                onClick={() => setIsHandActive(!isHandActive)}
+                title="HAND INTERACTION: Control with Movement"
+              >
+                <Hand size={24} />
               </button>
               <button className="control-btn" onClick={reset}>
                 <RefreshCw size={24} />
