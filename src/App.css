@@ -562,11 +562,12 @@ input[type="range"] {
   right: 0;
   width: 200px;
   height: 100vh;
-  background: linear-gradient(to left, rgba(10, 10, 10, 0.25), transparent);
+  background: linear-gradient(to left, rgba(10, 10, 10, 0.15), transparent);
   padding: 2rem 1rem;
   z-index: 15;
   overflow: hidden;
   pointer-events: none;
+  opacity: 0.6;
 }
 
 .data-stream-header {
