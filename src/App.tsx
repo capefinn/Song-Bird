@@ -4,8 +4,7 @@ import { OrbitControls, PerspectiveCamera } from '@react-three/drei';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import { AudioAnalyzer } from './audio/AudioAnalyzer';
 import { GenerativeStructure } from './components/GenerativeStructure';
-import { HandTracker, type HandData } from './components/HandTracker';
-import { Play, Pause, Upload, Mic, RefreshCw, Activity, Menu, X, Bird, ShieldCheck, Music, Hand } from 'lucide-react';
+import { Play, Pause, Upload, Mic, RefreshCw, Activity, Menu, X, Bird, ShieldCheck, Music } from 'lucide-react';
 import { BIRD_SPECIES, type BirdSpecies } from './constants/species';
 import './App.css';
 
@@ -15,8 +14,8 @@ function App() {
   const [selectedColor, setSelectedColor] = useState('#ede5ff');
   const [structureColor, setStructureColor] = useState('#d96363');
   const [backgroundColor, setBackgroundColor] = useState('#020b0d');
-  const [lineWeight] = useState(0.5);
-  const [turbulence] = useState(0.0);
+  const [lineWeight, setLineWeight] = useState(0.5);
+  const [turbulence, setTurbulence] = useState(0.0);
   const [analyzer, setAnalyzer] = useState<AudioAnalyzer | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [signalLevel, setSignalLevel] = useState(0);
@@ -25,10 +24,6 @@ function App() {
   const [confidence, setConfidence] = useState(0);
   const [formation, setFormation] = useState<'ORBIT' | 'PHYLLOTAXIS' | 'FRACTAL'>('ORBIT');
   const [symphonicMode, setSymphonicMode] = useState(false);
-  const [particleColor, setParticleColor] = useState('#4cc9f0');
-  const [particleSize, setParticleSize] = useState(0.2);
-  const [isHandActive, setIsHandActive] = useState(false);
-  const [handData, setHandData] = useState<HandData>({ isVisible: false, distance: 1, center: { x: 0, y: 0, z: 0 } });
 
   const lastMatchTimeRef = useRef<number>(0);
   const audioElRef = useRef<HTMLAudioElement | null>(null);
@@ -192,9 +187,6 @@ function App() {
             turbulence={turbulence}
             formation={formation}
             symphonicMode={symphonicMode}
-            particleColor={particleColor}
-            particleSize={particleSize}
-            handData={isHandActive ? handData : null}
           />
 
           <OrbitControls
@@ -210,9 +202,6 @@ function App() {
           </EffectComposer>
         </Canvas>
       </div>
-
-      {/* Hand Tracker - must be outside Canvas (it's a DOM video element) */}
-      {isHandActive && <HandTracker onHandUpdate={setHandData} />}
 
       {identifiedBird && (
         <div className="bird-label-container">
@@ -283,6 +272,26 @@ function App() {
             {/* Visual Controls */}
             <div className="slider-group">
               <div className="slider-item">
+                <div className="picker-header">
+                  <span className="picker-label">WEIGHT</span>
+                  <span className="value-badge">{lineWeight.toFixed(1)}</span>
+                </div>
+                <input
+                  type="range" min="0.1" max="5" step="0.1"
+                  value={lineWeight} onChange={e => setLineWeight(parseFloat(e.target.value))}
+                />
+              </div>
+              <div className="slider-item">
+                <div className="picker-header">
+                  <span className="picker-label">WAVE</span>
+                  <span className="value-badge">{turbulence.toFixed(2)}</span>
+                </div>
+                <input
+                  type="range" min="0" max="1" step="0.01"
+                  value={turbulence} onChange={e => setTurbulence(parseFloat(e.target.value))}
+                />
+              </div>
+              <div className="slider-item">
                 <span className="picker-label">FORMATION</span>
                 <select
                   className="formation-select"
@@ -324,27 +333,6 @@ function App() {
                   className="color-picker-input"
                 />
               </div>
-              <div className="color-picker-item">
-                <span className="picker-label">CLOUD</span>
-                <input
-                  type="color"
-                  value={particleColor}
-                  onChange={(e) => setParticleColor(e.target.value)}
-                  className="color-picker-input"
-                />
-              </div>
-            </div>
-            <div className="slider-group">
-              <div className="slider-item">
-                <div className="picker-header">
-                  <span className="picker-label">P-SIZE</span>
-                  <span className="value-badge">{particleSize.toFixed(2)}</span>
-                </div>
-                <input
-                  type="range" min="0.01" max="1" step="0.01"
-                  value={particleSize} onChange={e => setParticleSize(parseFloat(e.target.value))}
-                />
-              </div>
             </div>
             <div className="control-group">
               <button className="control-btn" onClick={togglePause}>
@@ -356,13 +344,6 @@ function App() {
                 title="SYMPHONIC MODE: Optimized for Music"
               >
                 <Music size={24} />
-              </button>
-              <button
-                className={`control-btn ${isHandActive ? 'active' : ''}`}
-                onClick={() => setIsHandActive(!isHandActive)}
-                title="HAND INTERACTION: Control with Movement"
-              >
-                <Hand size={24} />
               </button>
               <button className="control-btn" onClick={reset}>
                 <RefreshCw size={24} />
