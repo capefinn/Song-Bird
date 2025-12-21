@@ -33,7 +33,13 @@ export function GenerativeStructure({
     turbulence?: number,
     formation?: 'ORBIT' | 'PHYLLOTAXIS' | 'FRACTAL',
     symphonicMode?: boolean,
-    onDataPoint?: (point: { color: string, amplitude: number, emissionTime: number }) => void
+    onDataPoint?: (point: {
+        color: string,
+        amplitude: number,
+        emissionTime: number,
+        note: string,
+        brightness: number
+    }) => void
 }) {
     const groupRef = useRef<Group>(null);
     const cursorRef = useRef(new Vector3(0, 0, 0));
@@ -181,9 +187,9 @@ export function GenerativeStructure({
             }
         }
 
-        // 3. DATA POINT EMISSION (Emit when locked and enough time passed)
+        // 3. DATA POINT EMISSION (More frequent, lower threshold)
         const now = state.clock.getElapsedTime();
-        if (isNoteLocked && volume > 0.1 && (now - lastEmitTimeRef.current) > 0.3) {
+        if (isNoteLocked && volume > 0.05 && (now - lastEmitTimeRef.current) > 0.15) {
             const newPoint: DataPoint = {
                 id: dataPointIdRef.current++,
                 position: cursorRef.current.clone(),
@@ -195,12 +201,14 @@ export function GenerativeStructure({
             setDataPoints(prev => [...prev, newPoint].slice(-50));
             lastEmitTimeRef.current = now;
 
-            // Callback to App for UI panel
+            // Callback to App for UI panel with rich data
             if (onDataPoint) {
                 onDataPoint({
                     color: activeColorHex,
                     amplitude: Math.min(volume, 1),
-                    emissionTime: absoluteTime
+                    emissionTime: absoluteTime,
+                    note: currentLabel.current,
+                    brightness: features?.spectralCentroid ? Math.min(features.spectralCentroid / 5000, 1) : 0
                 });
             }
         }

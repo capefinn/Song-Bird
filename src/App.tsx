@@ -24,7 +24,13 @@ function App() {
   const [confidence, setConfidence] = useState(0);
   const [formation, setFormation] = useState<'ORBIT' | 'PHYLLOTAXIS' | 'FRACTAL'>('ORBIT');
   const [symphonicMode, setSymphonicMode] = useState(false);
-  const [dataStream, setDataStream] = useState<Array<{ color: string, amplitude: number, emissionTime: number }>>([]);
+  const [dataStream, setDataStream] = useState<Array<{
+    color: string,
+    amplitude: number,
+    emissionTime: number,
+    note: string,
+    brightness: number
+  }>>([]);
 
   const lastMatchTimeRef = useRef<number>(0);
   const audioElRef = useRef<HTMLAudioElement | null>(null);
@@ -188,7 +194,7 @@ function App() {
             turbulence={turbulence}
             formation={formation}
             symphonicMode={symphonicMode}
-            onDataPoint={(point) => setDataStream(prev => [point, ...prev].slice(0, 20))}
+            onDataPoint={(point) => setDataStream(prev => [point, ...prev].slice(0, 40))}
           />
 
           <OrbitControls
@@ -222,21 +228,41 @@ function App() {
         </div>
       )}
 
-      {/* DATA STREAM PANEL */}
+      {/* DATA STREAM PANEL - Ghostly Full Height */}
       {hasStarted && dataStream.length > 0 && (
         <div className="data-stream-panel">
           <div className="data-stream-header">
-            <Activity size={14} />
-            <span>DATA STREAM</span>
+            <Activity size={12} />
+            <span>SPECTRAL DATA</span>
           </div>
           <div className="data-stream-list">
             {dataStream.map((point, i) => (
-              <div key={i} className="data-stream-item" style={{ borderLeftColor: point.color }}>
-                <div className="data-stream-color" style={{ backgroundColor: point.color }} />
-                <div className="data-stream-values">
-                  <span className="data-amp">{point.amplitude.toFixed(2)}</span>
-                  <span className="data-time">@{point.emissionTime.toFixed(1)}s</span>
+              <div
+                key={i}
+                className="data-stream-item"
+                style={{
+                  borderLeftColor: point.color,
+                  opacity: 1 - (i * 0.02)
+                }}
+              >
+                <div className="data-note" style={{ color: point.color }}>
+                  {point.note}
                 </div>
+                <div className="data-metrics">
+                  <div className="metric">
+                    <span className="metric-label">AMP</span>
+                    <div className="metric-bar">
+                      <div className="metric-fill" style={{ width: `${point.amplitude * 100}%`, background: point.color }} />
+                    </div>
+                  </div>
+                  <div className="metric">
+                    <span className="metric-label">BRT</span>
+                    <div className="metric-bar">
+                      <div className="metric-fill brightness" style={{ width: `${point.brightness * 100}%` }} />
+                    </div>
+                  </div>
+                </div>
+                <span className="data-time">@{point.emissionTime.toFixed(1)}s</span>
               </div>
             ))}
           </div>
