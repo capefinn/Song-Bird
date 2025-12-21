@@ -16,6 +16,13 @@ interface DataPoint {
     birthTime: number;     // Clock time when created (for lifetime calc)
 }
 
+interface GlowMarker {
+    id: number;
+    position: Vector3;
+    color: string;
+    birthTime: number;
+}
+
 export function GenerativeStructure({
     analyzer,
     trailColor = "#ede5ff",
@@ -59,7 +66,14 @@ export function GenerativeStructure({
     const [structurePoints, setStructurePoints] = useState<Vector3[]>([]);
 
     const lastNoteRef = useRef(-1);
+    const wasLockedRef = useRef(false);
+    const sustainRef = useRef(0);
+    const brightnessRef = useRef(0.5);
     const currentLabel = useRef("LISTENING...");
+
+    // Glow markers for note release
+    const [glowMarkers, setGlowMarkers] = useState<GlowMarker[]>([]);
+    const glowIdRef = useRef(0);
 
     // 1. CONSTELLATION LAYOUT
     const anchors = useMemo(() => {
@@ -213,7 +227,32 @@ export function GenerativeStructure({
             }
         }
 
-        // 4. MOTION & PROXIMITY
+        // 4. GLOW ON NOTE RELEASE
+        if (wasLockedRef.current && !isNoteLocked) {
+            // Note just released - spawn a glow marker
+            const newGlow: GlowMarker = {
+                id: glowIdRef.current++,
+                position: cursorRef.current.clone(),
+                color: activeColorHex,
+                birthTime: now
+            };
+            setGlowMarkers(prev => [...prev, newGlow].slice(-20));
+        }
+        wasLockedRef.current = isNoteLocked;
+
+        // Track sustain (how long same note is held)
+        if (isNoteLocked) {
+            sustainRef.current += delta;
+        } else {
+            sustainRef.current = Math.max(0, sustainRef.current - delta * 2);
+        }
+
+        // Track brightness for line width
+        brightnessRef.current = features?.spectralCentroid
+            ? Math.min(features.spectralCentroid / 3000, 1)
+            : brightnessRef.current * 0.95;
+
+        // 5. MOTION & PROXIMITY
         const zipSpeed = isNoteLocked ? 40 : 4;
         cursorRef.current.lerp(targetPos, zipSpeed * delta);
 
@@ -235,7 +274,7 @@ export function GenerativeStructure({
             }
         });
 
-        // 5. TRAIL UPDATES
+        // 6. TRAIL UPDATES
         const cp = cursorRef.current.clone();
 
         if (turbulence > 0) {
@@ -245,6 +284,12 @@ export function GenerativeStructure({
             cp.z += Math.sin(t * 6 + cp.y * 0.4) * (turbulence * 8.0);
         }
 
+        // Add sustain-based vertical oscillation
+        if (sustainRef.current > 0.5) {
+            const sustainOsc = Math.sin(now * 10) * (sustainRef.current * 2);
+            cp.y += sustainOsc;
+        }
+
         setCometPoints(prev => [...prev, cp].slice(-80));
 
         const lastS = structurePoints[structurePoints.length - 1];
@@ -252,7 +297,10 @@ export function GenerativeStructure({
             setStructurePoints(prev => [...prev, cp].slice(-1500));
         }
 
-        // 6. FIREFLY
+        // Clean up old glow markers
+        setGlowMarkers(prev => prev.filter(g => now - g.birthTime < 1.5));
+
+        // 7. FIREFLY
         if (fireflyRef.current) {
             fireflyRef.current.position.copy(cursorRef.current);
             const s = 0.08 + (volume * 0.5);
@@ -348,12 +396,12 @@ export function GenerativeStructure({
             </mesh>
             <pointLight ref={lightRef} distance={100} decay={2} />
 
-            {/* COMET HEAD */}
+            {/* COMET HEAD - Width varies with brightness */}
             {cometPoints.length > 2 && (
                 <Line
                     points={cometPoints}
                     color={trailColor}
-                    lineWidth={lineWeight * 6}
+                    lineWidth={lineWeight * 6 * (0.5 + brightnessRef.current * 0.5)}
                     transparent
                     opacity={0.7}
                 />
@@ -369,6 +417,29 @@ export function GenerativeStructure({
                     opacity={0.15}
                 />
             )}
+
+            {/* GLOW MARKERS - Note release flashes */}
+            {glowMarkers.map(glow => {
+                const age = currentTimeRef.current - glow.birthTime;
+                const fadeOut = Math.max(0, 1 - age / 1.5);
+                return (
+                    <group key={glow.id} position={glow.position}>
+                        <Sphere args={[0.8 + (1 - fadeOut) * 2, 16, 16]}>
+                            <meshBasicMaterial
+                                color={glow.color}
+                                transparent
+                                opacity={fadeOut * 0.6}
+                            />
+                        </Sphere>
+                        <pointLight
+                            color={glow.color}
+                            intensity={fadeOut * 50}
+                            distance={20}
+                            decay={2}
+                        />
+                    </group>
+                );
+            })}
 
             {/* DATA POINTS with metadata labels */}
             {dataPoints.map(point => (
