@@ -1,10 +1,20 @@
 import { useRef, useMemo, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Vector3, Group, Mesh, Color } from 'three';
-import { Text, Sphere, Float, Line } from '@react-three/drei';
+import { Text, Sphere, Float, Line, Billboard } from '@react-three/drei';
 import type { AudioAnalyzer } from '../audio/AudioAnalyzer';
 
 const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+
+// Data Point Interface with 4 key pieces of information
+interface DataPoint {
+    id: number;
+    position: Vector3;
+    color: string;         // Most active frequency band color at emission
+    amplitude: number;     // 0 to 1 scale
+    emissionTime: number;  // Absolute time since start (seconds)
+    birthTime: number;     // Clock time when created (for lifetime calc)
+}
 
 export function GenerativeStructure({
     analyzer,
@@ -29,6 +39,12 @@ export function GenerativeStructure({
     const lightRef = useRef<any>(null);
     const anchorRefs = useRef<(Group | null)[]>([]);
 
+    // Data Points System
+    const [dataPoints, setDataPoints] = useState<DataPoint[]>([]);
+    const dataPointIdRef = useRef(0);
+    const lastEmitTimeRef = useRef(0);
+    const startTimeRef = useRef<number | null>(null);
+
     // Trail Points (Using state for Line components compatibility)
     const [cometPoints, setCometPoints] = useState<Vector3[]>([]);
     const [structurePoints, setStructurePoints] = useState<Vector3[]>([]);
@@ -43,7 +59,6 @@ export function GenerativeStructure({
             let pos = new Vector3();
 
             if (formation === 'PHYLLOTAXIS') {
-                // Natural Fibonacci Spiral on a Sphere
                 const phi = Math.acos(1 - 2 * (i + 0.5) / 12);
                 const theta = Math.PI * (1 + Math.sqrt(5)) * (i + 0.5);
                 pos.set(
@@ -52,8 +67,7 @@ export function GenerativeStructure({
                     radius * Math.cos(phi)
                 );
             } else if (formation === 'FRACTAL') {
-                // Recursive crystalline structure (Nested Layers)
-                const layer = Math.floor(i / 4); // 3 layers of 4
+                const layer = Math.floor(i / 4);
                 const subIndex = i % 4;
                 const angle = (subIndex / 4) * Math.PI * 2 + (layer * Math.PI / 4);
                 const r = radius * Math.pow(0.6, layer);
@@ -64,7 +78,6 @@ export function GenerativeStructure({
                     z
                 );
             } else {
-                // Default ORBIT (Spherical Shell)
                 const angle = (i / 12) * Math.PI * 2;
                 const phi = Math.acos(-1 + (2 * i) / 11);
                 pos.set(
@@ -91,30 +104,33 @@ export function GenerativeStructure({
         const features = analyzer.getFeatures();
         if (!freqData) return;
 
+        // Initialize start time
+        if (startTimeRef.current === null) {
+            startTimeRef.current = state.clock.getElapsedTime();
+        }
+        const absoluteTime = state.clock.getElapsedTime() - startTimeRef.current;
+
         let targetPos = new Vector3(0, 0, 0);
         let isNoteLocked = false;
         let activeColor = new Color(trailColor);
+        let activeColorHex = trailColor;
 
         // 2. MUSICAL LOGIC (PEAK vs CHROMA)
         if (symphonicMode && features?.chroma) {
-            // SYMPHONIC MODE: Weighted Harmonic Influence
             const chroma = features.chroma;
             let maxChroma = 0;
             let primaryNote = 0;
 
-            // Influence the target position by all active notes
             const weightedPos = new Vector3(0, 0, 0);
             let totalWeight = 0;
 
             chroma.forEach((val, i) => {
                 if (val > maxChroma) { maxChroma = val; primaryNote = i; }
 
-                // Boost contribution of cleaner notes
                 const weight = Math.pow(val, 2);
                 weightedPos.add(anchors[i].pos.clone().multiplyScalar(weight));
                 totalWeight += weight;
 
-                // Animate anchors based on Chroma (Holographic Resonance)
                 const ref = anchorRefs.current[i];
                 if (ref) {
                     const mesh = ref.children[0] as Mesh;
@@ -128,9 +144,9 @@ export function GenerativeStructure({
                 targetPos.copy(weightedPos.divideScalar(totalWeight));
                 isNoteLocked = true;
                 activeColor.copy(new Color(anchors[primaryNote].color));
+                activeColorHex = anchors[primaryNote].color;
             }
         } else {
-            // BIRD MODE: Surgical Single Peak
             let maxVal = 0;
             let maxBin = -1;
             let avgVal = 0;
@@ -155,17 +171,32 @@ export function GenerativeStructure({
                     targetPos.y += (features?.spectralCentroid ? (features.spectralCentroid / 200) - 20 : 0);
 
                     activeColor.copy(new Color(anchor.color)).lerp(new Color(trailColor), 0.3);
+                    activeColorHex = anchor.color;
                     currentLabel.current = NOTE_NAMES[dNote];
                     lastNoteRef.current = dNote;
                 }
             }
         }
 
-        // 3. MOTION & PROXIMITY
+        // 3. DATA POINT EMISSION (Emit when locked and enough time passed)
+        const now = state.clock.getElapsedTime();
+        if (isNoteLocked && volume > 0.1 && (now - lastEmitTimeRef.current) > 0.3) {
+            const newPoint: DataPoint = {
+                id: dataPointIdRef.current++,
+                position: cursorRef.current.clone(),
+                color: activeColorHex,
+                amplitude: Math.min(volume, 1),
+                emissionTime: absoluteTime,
+                birthTime: now
+            };
+            setDataPoints(prev => [...prev, newPoint].slice(-50)); // Keep last 50 points
+            lastEmitTimeRef.current = now;
+        }
+
+        // 4. MOTION & PROXIMITY
         const zipSpeed = isNoteLocked ? 40 : 4;
         cursorRef.current.lerp(targetPos, zipSpeed * delta);
 
-        // Update Anchor Glows & Organic Drift
         anchors.forEach((a, i) => {
             const ref = anchorRefs.current[i];
             if (!ref) return;
@@ -184,10 +215,9 @@ export function GenerativeStructure({
             }
         });
 
-        // 4. TRAIL UPDATES
+        // 5. TRAIL UPDATES
         const cp = cursorRef.current.clone();
 
-        // Apply Waviness to the incoming point (Much more aggressive now)
         if (turbulence > 0) {
             const t = state.clock.getElapsedTime();
             cp.y += Math.sin(t * 8 + cp.x * 0.4) * (turbulence * 12.0);
@@ -195,16 +225,14 @@ export function GenerativeStructure({
             cp.z += Math.sin(t * 6 + cp.y * 0.4) * (turbulence * 8.0);
         }
 
-        // Comet Head
         setCometPoints(prev => [...prev, cp].slice(-80));
 
-        // Structure Map
         const lastS = structurePoints[structurePoints.length - 1];
         if (!lastS || cp.distanceTo(lastS) > 0.4) {
             setStructurePoints(prev => [...prev, cp].slice(-1500));
         }
 
-        // 5. FIREFLY
+        // 6. FIREFLY
         if (fireflyRef.current) {
             fireflyRef.current.position.copy(cursorRef.current);
             const s = 0.08 + (volume * 0.5);
@@ -218,6 +246,66 @@ export function GenerativeStructure({
         }
 
         if (groupRef.current) groupRef.current.rotation.y += delta * 0.025;
+    });
+
+    // Render individual data point with labels
+    const DataPointMarker = ({ point, currentTime }: { point: DataPoint, currentTime: number }) => {
+        const lifetime = currentTime - point.birthTime;
+
+        return (
+            <group position={point.position}>
+                {/* The Data Point Sphere */}
+                <Sphere args={[0.3, 16, 16]}>
+                    <meshBasicMaterial color={point.color} transparent opacity={0.8} />
+                </Sphere>
+
+                {/* Billboard labels that always face camera */}
+                <Billboard>
+                    {/* TOP: Amplitude (0-1) */}
+                    <Text
+                        position={[0, 1.2, 0]}
+                        fontSize={0.5}
+                        color="white"
+                        anchorX="center"
+                        anchorY="bottom"
+                        fillOpacity={0.7}
+                    >
+                        {point.amplitude.toFixed(2)}
+                    </Text>
+
+                    {/* LEFT: Lifetime (animated seconds) */}
+                    <Text
+                        position={[-1.5, 0, 0]}
+                        fontSize={0.4}
+                        color="#88ff88"
+                        anchorX="right"
+                        anchorY="middle"
+                        fillOpacity={0.6}
+                    >
+                        {lifetime.toFixed(1)}s
+                    </Text>
+
+                    {/* BOTTOM: Emission Time (absolute) */}
+                    <Text
+                        position={[0, -1.0, 0]}
+                        fontSize={0.4}
+                        color="#ffaa44"
+                        anchorX="center"
+                        anchorY="top"
+                        fillOpacity={0.6}
+                    >
+                        @{point.emissionTime.toFixed(1)}s
+                    </Text>
+                </Billboard>
+            </group>
+        );
+    };
+
+    // Get current time for lifetime calculation (through a separate frame hook isn't ideal, 
+    // but we'll use the state update cycle)
+    const [currentTime, setCurrentTime] = useState(0);
+    useFrame((state) => {
+        setCurrentTime(state.clock.getElapsedTime());
     });
 
     return (
@@ -244,7 +332,7 @@ export function GenerativeStructure({
             </mesh>
             <pointLight ref={lightRef} distance={100} decay={2} />
 
-            {/* COMET HEAD (drei Line for real width) */}
+            {/* COMET HEAD */}
             {cometPoints.length > 2 && (
                 <Line
                     points={cometPoints}
@@ -255,7 +343,7 @@ export function GenerativeStructure({
                 />
             )}
 
-            {/* STRUCTURE MAP (drei Line for real width) */}
+            {/* STRUCTURE MAP */}
             {structurePoints.length > 2 && (
                 <Line
                     points={structurePoints}
@@ -265,6 +353,11 @@ export function GenerativeStructure({
                     opacity={0.15}
                 />
             )}
+
+            {/* DATA POINTS with metadata labels */}
+            {dataPoints.map(point => (
+                <DataPointMarker key={point.id} point={point} currentTime={currentTime} />
+            ))}
 
             <Text position={[0, -28, 0]} fontSize={1.5} color="white" fillOpacity={0.05}>
                 {currentLabel.current}
