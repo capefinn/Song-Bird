@@ -14,8 +14,8 @@ function App() {
   const [selectedColor, setSelectedColor] = useState('#ede5ff');
   const [structureColor, setStructureColor] = useState('#d96363');
   const [backgroundColor, setBackgroundColor] = useState('#020b0d');
-  const [lineWeight, setLineWeight] = useState(0.5);
-  const [turbulence, setTurbulence] = useState(0.0);
+  const lineWeight = 0.5;
+  const turbulence = 0.0;
   const [analyzer, setAnalyzer] = useState<AudioAnalyzer | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [signalLevel, setSignalLevel] = useState(0);
@@ -24,6 +24,7 @@ function App() {
   const [confidence, setConfidence] = useState(0);
   const [formation, setFormation] = useState<'ORBIT' | 'PHYLLOTAXIS' | 'FRACTAL'>('ORBIT');
   const [symphonicMode, setSymphonicMode] = useState(false);
+  const [dataStream, setDataStream] = useState<Array<{ color: string, amplitude: number, emissionTime: number }>>([]);
 
   const lastMatchTimeRef = useRef<number>(0);
   const audioElRef = useRef<HTMLAudioElement | null>(null);
@@ -187,6 +188,7 @@ function App() {
             turbulence={turbulence}
             formation={formation}
             symphonicMode={symphonicMode}
+            onDataPoint={(point) => setDataStream(prev => [point, ...prev].slice(0, 20))}
           />
 
           <OrbitControls
@@ -216,6 +218,27 @@ function App() {
               <ShieldCheck size={12} style={{ marginRight: 4 }} />
               <span>{confidence}% CONFIDENCE</span>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* DATA STREAM PANEL */}
+      {hasStarted && dataStream.length > 0 && (
+        <div className="data-stream-panel">
+          <div className="data-stream-header">
+            <Activity size={14} />
+            <span>DATA STREAM</span>
+          </div>
+          <div className="data-stream-list">
+            {dataStream.map((point, i) => (
+              <div key={i} className="data-stream-item" style={{ borderLeftColor: point.color }}>
+                <div className="data-stream-color" style={{ backgroundColor: point.color }} />
+                <div className="data-stream-values">
+                  <span className="data-amp">{point.amplitude.toFixed(2)}</span>
+                  <span className="data-time">@{point.emissionTime.toFixed(1)}s</span>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}
@@ -271,26 +294,6 @@ function App() {
           <div className={`bottom-bar ${isMenuOpen ? 'mobile-open' : ''}`}>
             {/* Visual Controls */}
             <div className="slider-group">
-              <div className="slider-item">
-                <div className="picker-header">
-                  <span className="picker-label">WEIGHT</span>
-                  <span className="value-badge">{lineWeight.toFixed(1)}</span>
-                </div>
-                <input
-                  type="range" min="0.1" max="5" step="0.1"
-                  value={lineWeight} onChange={e => setLineWeight(parseFloat(e.target.value))}
-                />
-              </div>
-              <div className="slider-item">
-                <div className="picker-header">
-                  <span className="picker-label">WAVE</span>
-                  <span className="value-badge">{turbulence.toFixed(2)}</span>
-                </div>
-                <input
-                  type="range" min="0" max="1" step="0.01"
-                  value={turbulence} onChange={e => setTurbulence(parseFloat(e.target.value))}
-                />
-              </div>
               <div className="slider-item">
                 <span className="picker-label">FORMATION</span>
                 <select

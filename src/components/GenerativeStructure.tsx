@@ -23,7 +23,8 @@ export function GenerativeStructure({
     lineWeight = 1.0,
     turbulence = 0.0,
     formation = 'ORBIT',
-    symphonicMode = false
+    symphonicMode = false,
+    onDataPoint
 }: {
     analyzer: AudioAnalyzer | null,
     trailColor?: string,
@@ -31,7 +32,8 @@ export function GenerativeStructure({
     lineWeight?: number,
     turbulence?: number,
     formation?: 'ORBIT' | 'PHYLLOTAXIS' | 'FRACTAL',
-    symphonicMode?: boolean
+    symphonicMode?: boolean,
+    onDataPoint?: (point: { color: string, amplitude: number, emissionTime: number }) => void
 }) {
     const groupRef = useRef<Group>(null);
     const cursorRef = useRef(new Vector3(0, 0, 0));
@@ -44,6 +46,7 @@ export function GenerativeStructure({
     const dataPointIdRef = useRef(0);
     const lastEmitTimeRef = useRef(0);
     const startTimeRef = useRef<number | null>(null);
+    const currentTimeRef = useRef(0);
 
     // Trail Points (Using state for Line components compatibility)
     const [cometPoints, setCometPoints] = useState<Vector3[]>([]);
@@ -189,8 +192,17 @@ export function GenerativeStructure({
                 emissionTime: absoluteTime,
                 birthTime: now
             };
-            setDataPoints(prev => [...prev, newPoint].slice(-50)); // Keep last 50 points
+            setDataPoints(prev => [...prev, newPoint].slice(-50));
             lastEmitTimeRef.current = now;
+
+            // Callback to App for UI panel
+            if (onDataPoint) {
+                onDataPoint({
+                    color: activeColorHex,
+                    amplitude: Math.min(volume, 1),
+                    emissionTime: absoluteTime
+                });
+            }
         }
 
         // 4. MOTION & PROXIMITY
@@ -246,6 +258,9 @@ export function GenerativeStructure({
         }
 
         if (groupRef.current) groupRef.current.rotation.y += delta * 0.025;
+
+        // Update time ref for data point lifetime display
+        currentTimeRef.current = state.clock.getElapsedTime();
     });
 
     // Render individual data point with labels
@@ -301,13 +316,6 @@ export function GenerativeStructure({
         );
     };
 
-    // Get current time for lifetime calculation (through a separate frame hook isn't ideal, 
-    // but we'll use the state update cycle)
-    const [currentTime, setCurrentTime] = useState(0);
-    useFrame((state) => {
-        setCurrentTime(state.clock.getElapsedTime());
-    });
-
     return (
         <group ref={groupRef}>
             {anchors.map((anchor, i) => (
@@ -356,7 +364,7 @@ export function GenerativeStructure({
 
             {/* DATA POINTS with metadata labels */}
             {dataPoints.map(point => (
-                <DataPointMarker key={point.id} point={point} currentTime={currentTime} />
+                <DataPointMarker key={point.id} point={point} currentTime={currentTimeRef.current} />
             ))}
 
             <Text position={[0, -28, 0]} fontSize={1.5} color="white" fillOpacity={0.05}>
