@@ -276,26 +276,6 @@ function App() {
             {/* Visual Controls */}
             <div className="slider-group">
               <div className="slider-item">
-                <div className="picker-header">
-                  <span className="picker-label">WEIGHT</span>
-                  <span className="value-badge">{lineWeight.toFixed(1)}</span>
-                </div>
-                <input
-                  type="range" min="0.1" max="5" step="0.1"
-                  value={lineWeight} onChange={e => setLineWeight(parseFloat(e.target.value))}
-                />
-              </div>
-              <div className="slider-item">
-                <div className="picker-header">
-                  <span className="picker-label">WAVE</span>
-                  <span className="value-badge">{turbulence.toFixed(2)}</span>
-                </div>
-                <input
-                  type="range" min="0" max="1" step="0.01"
-                  value={turbulence} onChange={e => setTurbulence(parseFloat(e.target.value))}
-                />
-              </div>
-              <div className="slider-item">
                 <span className="picker-label">FORMATION</span>
                 <select
                   className="formation-select"
