@@ -424,7 +424,7 @@ export function GenerativeStructure({
                 const fadeOut = Math.max(0, 1 - age / 1.5);
                 return (
                     <group key={glow.id} position={glow.position}>
-                        <Sphere args={[0.8 + (1 - fadeOut) * 2, 16, 16]}>
+                        <Sphere args={[0.8 + (1 - fadeOut) * 0.8, 16, 16]}>
                             <meshBasicMaterial
                                 color={glow.color}
                                 transparent
