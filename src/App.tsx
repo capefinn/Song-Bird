@@ -197,8 +197,6 @@ function App() {
             handData={isHandActive ? handData : null}
           />
 
-          {isHandActive && <HandTracker onHandUpdate={setHandData} />}
-
           <OrbitControls
             enablePan={false}
             minDistance={5}
@@ -212,6 +210,9 @@ function App() {
           </EffectComposer>
         </Canvas>
       </div>
+
+      {/* Hand Tracker - must be outside Canvas (it's a DOM video element) */}
+      {isHandActive && <HandTracker onHandUpdate={setHandData} />}
 
       {identifiedBird && (
         <div className="bird-label-container">
