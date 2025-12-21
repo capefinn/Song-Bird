@@ -14,7 +14,7 @@ function App() {
   const [selectedColor, setSelectedColor] = useState('#ede5ff');
   const [structureColor, setStructureColor] = useState('#d96363');
   const [backgroundColor, setBackgroundColor] = useState('#020b0d');
-  const [lineWeight, setLineWeight] = useState(0.8);
+  const [lineWeight, setLineWeight] = useState(0.5);
   const [turbulence, setTurbulence] = useState(0.0);
   const [analyzer, setAnalyzer] = useState<AudioAnalyzer | null>(null);
   const [isRecording, setIsRecording] = useState(false);
@@ -23,6 +23,7 @@ function App() {
   const [identifiedBird, setIdentifiedBird] = useState<BirdSpecies | null>(null);
   const [confidence, setConfidence] = useState(0);
 
+  const lastMatchTimeRef = useRef<number>(0);
   const audioElRef = useRef<HTMLAudioElement | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
 
@@ -35,10 +36,10 @@ function App() {
       setSignalLevel(vol * 100);
 
       // Bird Identification Logic
-      if (vol > 0.1) {
+      if (vol > 0.05) {
         const features = analyzer.getFeatures();
         if (features) {
-          // Normalize centroid (bins to 0-100)
+          // Normalize centroid (bins 0-512 to 0-100)
           const normCentroid = (features.spectralCentroid / 512) * 100;
           const normSpread = (features.spectralSpread / 256) * 100;
 
@@ -51,16 +52,16 @@ function App() {
 
           if (match) {
             setIdentifiedBird(match);
-            setConfidence(Math.floor(70 + Math.random() * 25)); // Visual flair
-            setSelectedColor(match.color); // Assign bird color to comet
-          } else {
-            // Decay identification
-            if (identifiedBird) {
-              const timer = setTimeout(() => setIdentifiedBird(null), 3000);
-              return () => clearTimeout(timer);
-            }
+            setConfidence(Math.floor(82 + Math.random() * 15));
+            setSelectedColor(match.color);
+            lastMatchTimeRef.current = Date.now();
           }
         }
+      }
+
+      // Decay: If nothing identified for 4s, clear label
+      if (identifiedBird && Date.now() - lastMatchTimeRef.current > 4000) {
+        setIdentifiedBird(null);
       }
 
       frameId = requestAnimationFrame(checkSignal);
