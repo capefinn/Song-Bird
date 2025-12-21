@@ -13,7 +13,9 @@ export function GenerativeStructure({
     lineWeight = 1.0,
     turbulence = 0.0,
     formation = 'ORBIT',
-    symphonicMode = false
+    symphonicMode = false,
+    particleColor = '#4cc9f0',
+    particleSize = 0.2
 }: {
     analyzer: AudioAnalyzer | null,
     trailColor?: string,
@@ -21,13 +23,36 @@ export function GenerativeStructure({
     lineWeight?: number,
     turbulence?: number,
     formation?: 'ORBIT' | 'PHYLLOTAXIS' | 'FRACTAL',
-    symphonicMode?: boolean
+    symphonicMode?: boolean,
+    particleColor?: string,
+    particleSize?: number
 }) {
     const groupRef = useRef<Group>(null);
+    const particleGroupRef = useRef<any>(null);
     const cursorRef = useRef(new Vector3(0, 0, 0));
     const fireflyRef = useRef<Mesh>(null);
     const lightRef = useRef<any>(null);
     const anchorRefs = useRef<(Group | null)[]>([]);
+
+    // 0. PARTICLE CLOUD DATA
+    const particles = useMemo(() => {
+        const count = 1500;
+        const positions = new Float32Array(count * 3);
+        const drift = new Float32Array(count);
+
+        for (let i = 0; i < count; i++) {
+            const r = 60 + Math.random() * 140;
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos(2 * Math.random() - 1);
+
+            positions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+            positions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
+            positions[i * 3 + 2] = r * Math.cos(phi);
+
+            drift[i] = Math.random() * Math.PI * 2;
+        }
+        return { positions, drift };
+    }, []);
 
     // Trail Points (Using state for Line components compatibility)
     const [cometPoints, setCometPoints] = useState<Vector3[]>([]);
@@ -90,6 +115,24 @@ export function GenerativeStructure({
         const volume = analyzer.getRawVolume();
         const features = analyzer.getFeatures();
         if (!freqData) return;
+
+        // 2. PARTICLE ANIMATION (Interconnected Atmosphere)
+        if (particleGroupRef.current) {
+            const time = state.clock.getElapsedTime();
+            const positions = particleGroupRef.current.geometry.attributes.position.array;
+
+            for (let i = 0; i < particles.positions.length / 3; i++) {
+                const i3 = i * 3;
+                const offset = particles.drift[i];
+                // Organic drift + volume reaction
+                const reaction = volume * 1.5;
+                positions[i3] += Math.sin(time * 0.2 + offset) * 0.05 + (Math.random() - 0.5) * reaction;
+                positions[i3 + 1] += Math.cos(time * 0.3 + offset) * 0.05 + (Math.random() - 0.5) * reaction;
+                positions[i3 + 2] += Math.sin(time * 0.25 + offset) * 0.05 + (Math.random() - 0.5) * reaction;
+            }
+            particleGroupRef.current.geometry.attributes.position.needsUpdate = true;
+            particleGroupRef.current.rotation.y += delta * 0.05;
+        }
 
         let targetPos = new Vector3(0, 0, 0);
         let isNoteLocked = false;
@@ -222,6 +265,25 @@ export function GenerativeStructure({
 
     return (
         <group ref={groupRef}>
+            {/* 0. PARTICLE CLOUD */}
+            <points ref={particleGroupRef}>
+                <bufferGeometry>
+                    <bufferAttribute
+                        attach="attributes-position"
+                        args={[particles.positions, 3]}
+                    />
+                </bufferGeometry>
+                <pointsMaterial
+                    size={particleSize}
+                    color={particleColor}
+                    transparent
+                    opacity={0.4}
+                    sizeAttenuation
+                    depthWrite={false}
+                    blending={2} // Additive Blending
+                />
+            </points>
+
             {anchors.map((anchor, i) => (
                 <Float key={i} speed={2} rotationIntensity={0.5}>
                     <group

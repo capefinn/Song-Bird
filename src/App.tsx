@@ -24,6 +24,8 @@ function App() {
   const [confidence, setConfidence] = useState(0);
   const [formation, setFormation] = useState<'ORBIT' | 'PHYLLOTAXIS' | 'FRACTAL'>('ORBIT');
   const [symphonicMode, setSymphonicMode] = useState(false);
+  const [particleColor, setParticleColor] = useState('#4cc9f0');
+  const [particleSize, setParticleSize] = useState(0.2);
 
   const lastMatchTimeRef = useRef<number>(0);
   const audioElRef = useRef<HTMLAudioElement | null>(null);
@@ -187,6 +189,8 @@ function App() {
             turbulence={turbulence}
             formation={formation}
             symphonicMode={symphonicMode}
+            particleColor={particleColor}
+            particleSize={particleSize}
           />
 
           <OrbitControls
@@ -331,6 +335,27 @@ function App() {
                   value={backgroundColor}
                   onChange={(e) => setBackgroundColor(e.target.value)}
                   className="color-picker-input"
+                />
+              </div>
+              <div className="color-picker-item">
+                <span className="picker-label">CLOUD</span>
+                <input
+                  type="color"
+                  value={particleColor}
+                  onChange={(e) => setParticleColor(e.target.value)}
+                  className="color-picker-input"
+                />
+              </div>
+            </div>
+            <div className="slider-group">
+              <div className="slider-item">
+                <div className="picker-header">
+                  <span className="picker-label">P-SIZE</span>
+                  <span className="value-badge">{particleSize.toFixed(2)}</span>
+                </div>
+                <input
+                  type="range" min="0.01" max="1" step="0.01"
+                  value={particleSize} onChange={e => setParticleSize(parseFloat(e.target.value))}
                 />
               </div>
             </div>
