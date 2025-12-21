@@ -11,13 +11,15 @@ export function GenerativeStructure({
     trailColor = "#ede5ff",
     structureColor = "#d96363",
     lineWeight = 1.0,
-    turbulence = 0.0
+    turbulence = 0.0,
+    formation = 'ORBIT'
 }: {
     analyzer: AudioAnalyzer | null,
     trailColor?: string,
     structureColor?: string,
     lineWeight?: number,
-    turbulence?: number
+    turbulence?: number,
+    formation?: 'ORBIT' | 'PHYLLOTAXIS' | 'FRACTAL'
 }) {
     const groupRef = useRef<Group>(null);
     const cursorRef = useRef(new Vector3(0, 0, 0));
@@ -34,22 +36,50 @@ export function GenerativeStructure({
 
     // 1. CONSTELLATION LAYOUT
     const anchors = useMemo(() => {
+        const radius = 40;
         return Array.from({ length: 12 }).map((_, i) => {
-            const angle = (i / 12) * Math.PI * 2;
-            const phi = Math.acos(-1 + (2 * i) / 11);
-            const r = 40;
+            let pos = new Vector3();
+
+            if (formation === 'PHYLLOTAXIS') {
+                // Natural Fibonacci Spiral on a Sphere
+                const phi = Math.acos(1 - 2 * (i + 0.5) / 12);
+                const theta = Math.PI * (1 + Math.sqrt(5)) * (i + 0.5);
+                pos.set(
+                    radius * Math.cos(theta) * Math.sin(phi),
+                    radius * Math.sin(theta) * Math.sin(phi),
+                    radius * Math.cos(phi)
+                );
+            } else if (formation === 'FRACTAL') {
+                // Recursive crystalline structure (Nested Layers)
+                const layer = Math.floor(i / 4); // 3 layers of 4
+                const subIndex = i % 4;
+                const angle = (subIndex / 4) * Math.PI * 2 + (layer * Math.PI / 4);
+                const r = radius * Math.pow(0.6, layer);
+                const z = (layer - 1) * 15;
+                pos.set(
+                    r * Math.cos(angle),
+                    r * Math.sin(angle),
+                    z
+                );
+            } else {
+                // Default ORBIT (Spherical Shell)
+                const angle = (i / 12) * Math.PI * 2;
+                const phi = Math.acos(-1 + (2 * i) / 11);
+                pos.set(
+                    radius * Math.sin(phi) * Math.cos(angle),
+                    radius * Math.sin(phi) * Math.sin(angle),
+                    radius * Math.cos(phi)
+                );
+            }
+
             return {
-                pos: new Vector3(
-                    r * Math.sin(phi) * Math.cos(angle),
-                    r * Math.sin(phi) * Math.sin(angle),
-                    r * Math.cos(phi)
-                ),
+                pos: pos,
                 name: NOTE_NAMES[i],
                 color: `hsl(${(i * 30)}, 70%, 65%)`,
                 offset: Math.random() * 10
             };
         });
-    }, []);
+    }, [formation]);
 
     useFrame((state, delta) => {
         if (!analyzer) return;

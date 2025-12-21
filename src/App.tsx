@@ -22,6 +22,7 @@ function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [identifiedBird, setIdentifiedBird] = useState<BirdSpecies | null>(null);
   const [confidence, setConfidence] = useState(0);
+  const [formation, setFormation] = useState<'ORBIT' | 'PHYLLOTAXIS' | 'FRACTAL'>('ORBIT');
 
   const lastMatchTimeRef = useRef<number>(0);
   const audioElRef = useRef<HTMLAudioElement | null>(null);
@@ -183,6 +184,7 @@ function App() {
             structureColor={structureColor}
             lineWeight={lineWeight}
             turbulence={turbulence}
+            formation={formation}
           />
 
           <OrbitControls
@@ -286,6 +288,18 @@ function App() {
                   type="range" min="0" max="1" step="0.01"
                   value={turbulence} onChange={e => setTurbulence(parseFloat(e.target.value))}
                 />
+              </div>
+              <div className="slider-item">
+                <span className="picker-label">FORMATION</span>
+                <select
+                  className="formation-select"
+                  value={formation}
+                  onChange={(e) => setFormation(e.target.value as any)}
+                >
+                  <option value="ORBIT">ORBIT</option>
+                  <option value="PHYLLOTAXIS">NATURAL</option>
+                  <option value="FRACTAL">FRACTAL</option>
+                </select>
               </div>
             </div>
 

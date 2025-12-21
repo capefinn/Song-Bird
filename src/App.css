@@ -500,3 +500,30 @@ input[type="range"] {
     height: 40px;
   }
 }
+/* Formation Selector Styles */
+.formation-select {
+  background: rgba(10, 10, 10, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: white;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.6rem;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.3s ease;
+  appearance: none;
+  -webkit-appearance: none;
+  text-align: center;
+  letter-spacing: 0.1rem;
+}
+
+.formation-select:hover {
+  border-color: var(--accent);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.formation-select option {
+  background: #0a0a0a;
+  color: white;
+}
