@@ -285,10 +285,8 @@ export function GenerativeStructure({
         }
 
         // Add sustain-based vertical oscillation
-        if (sustainRef.current > 0.5) {
-            const sustainOsc = Math.sin(now * 10) * (sustainRef.current * 2);
-            cp.y += sustainOsc;
-        }
+        // Removed as per user request to avoid scattered wave effect
+
 
         setCometPoints(prev => [...prev, cp].slice(-80));
 
