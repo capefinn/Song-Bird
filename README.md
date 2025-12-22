@@ -16,13 +16,14 @@ Song Bird is not a random particle system; it is a precision instrument measurin
 - **Note Resolution:** This frequency is mathematically converted into a musical note (C, C#, D, etc.) using the logarithmic MIDI scale.
 
 ### 2. Visual Mapping (The Eye)
-- **The Constellation:** 12 invisible anchors represent the 12 musical notes of the chromatic scale, arranged in a 3D formation (Orbit, Phyllotaxis, or Fractal).
+- **The Constellation:** 12 invisible anchors represent the 12 musical notes of the chromatic scale, arranged in a 3D formation (Orbit, Phyllotaxis, Fractal, or Mandala).
 - **The Zipping Engine:** When a clear note is detected, the "Firefly" cursor is magnetically pulled toward that note's anchor.
 - **Spectral Centroid (Brightness):** We measure the "brightness" or timbre of the sound. Brighter sounds (like hi-hats or violins) create thicker, more intense trails, while darker sounds create thinner lines.
 - **Amplitude (Volume):** The loudness of the sound controls the size of the Firefly and the intensity of the light it casts.
 
 ## ✨ Key Features
 - **Sentient 3D Constellation**: 12 Note-anchors that drift organically and glow intensely when approached.
+- **Multiple Formations**: Choose between Orbit, Natural (Phyllotaxis), Fractal, or the kaleidoscopic Mandala mode.
 - **Dual-Layer Trails**: High-intensity "Comet" tracers that fade into a persistent "Structure Map."
 - **Surgical Pitch Accuracy**: Custom-built FFT peak resolver for mechanical note-locking.
 - **Reactive Glow**: Notes leave behind glowing "release markers" when the melody changes.

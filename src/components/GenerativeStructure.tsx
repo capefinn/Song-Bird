@@ -38,7 +38,7 @@ export function GenerativeStructure({
     structureColor?: string,
     lineWeight?: number,
     turbulence?: number,
-    formation?: 'ORBIT' | 'PHYLLOTAXIS' | 'FRACTAL',
+    formation?: 'ORBIT' | 'PHYLLOTAXIS' | 'FRACTAL' | 'MANDALA',
     symphonicMode?: boolean,
     onDataPoint?: (point: {
         color: string,
@@ -99,6 +99,15 @@ export function GenerativeStructure({
                     r * Math.cos(angle),
                     r * Math.sin(angle),
                     z
+                );
+            } else if (formation === 'MANDALA') {
+                // Flat circle for Mandala to ensure symmetry
+                const angle = (i / 12) * Math.PI * 2;
+                const r = radius * 0.6;
+                pos.set(
+                    r * Math.cos(angle),
+                    r * Math.sin(angle),
+                    0
                 );
             } else {
                 const angle = (i / 12) * Math.PI * 2;
@@ -263,9 +272,9 @@ export function GenerativeStructure({
             const proximity = Math.max(0, 1 - dist / 25);
 
             const t = state.clock.getElapsedTime();
-            ref.position.x = Math.sin(t * 0.4 + a.offset) * 1.5;
-            ref.position.y = Math.cos(t * 0.5 + a.offset) * 1.5;
-            ref.position.z = Math.sin(t * 0.3 + a.offset) * 1.5;
+            ref.position.x = a.pos.x + Math.sin(t * 0.4 + a.offset) * 1.5;
+            ref.position.y = a.pos.y + Math.cos(t * 0.5 + a.offset) * 1.5;
+            ref.position.z = a.pos.z + Math.sin(t * 0.3 + a.offset) * 1.5;
 
             const mesh = ref.children[0] as Mesh;
             if (mesh && mesh.material) {
@@ -395,25 +404,52 @@ export function GenerativeStructure({
             <pointLight ref={lightRef} distance={100} decay={2} />
 
             {/* COMET HEAD - Width varies with brightness */}
-            {cometPoints.length > 2 && (
-                <Line
-                    points={cometPoints}
-                    color={trailColor}
-                    lineWidth={lineWeight * 6 * (0.5 + brightnessRef.current * 0.5)}
-                    transparent
-                    opacity={0.7}
-                />
-            )}
+            {formation === 'MANDALA' ? (
+                Array.from({ length: 8 }).map((_, i) => (
+                    <group key={i} rotation={[0, 0, (i / 8) * Math.PI * 2]}>
+                        {cometPoints.length > 2 && (
+                            <Line
+                                points={cometPoints}
+                                color={trailColor}
+                                lineWidth={lineWeight * 6 * (0.5 + brightnessRef.current * 0.5)}
+                                transparent
+                                opacity={0.7}
+                            />
+                        )}
+                        {structurePoints.length > 2 && (
+                            <Line
+                                points={structurePoints}
+                                color={structureColor}
+                                lineWidth={lineWeight * 0.8}
+                                transparent
+                                opacity={0.15}
+                            />
+                        )}
+                    </group>
+                ))
+            ) : (
+                <>
+                    {cometPoints.length > 2 && (
+                        <Line
+                            points={cometPoints}
+                            color={trailColor}
+                            lineWidth={lineWeight * 6 * (0.5 + brightnessRef.current * 0.5)}
+                            transparent
+                            opacity={0.7}
+                        />
+                    )}
 
-            {/* STRUCTURE MAP */}
-            {structurePoints.length > 2 && (
-                <Line
-                    points={structurePoints}
-                    color={structureColor}
-                    lineWidth={lineWeight * 0.8}
-                    transparent
-                    opacity={0.15}
-                />
+                    {/* STRUCTURE MAP */}
+                    {structurePoints.length > 2 && (
+                        <Line
+                            points={structurePoints}
+                            color={structureColor}
+                            lineWidth={lineWeight * 0.8}
+                            transparent
+                            opacity={0.15}
+                        />
+                    )}
+                </>
             )}
 
             {/* GLOW MARKERS - Note release flashes */}

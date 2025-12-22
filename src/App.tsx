@@ -21,7 +21,7 @@ function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [identifiedBird, setIdentifiedBird] = useState<BirdSpecies | null>(null);
   const [confidence, setConfidence] = useState(0);
-  const [formation, setFormation] = useState<'ORBIT' | 'PHYLLOTAXIS' | 'FRACTAL'>('ORBIT');
+  const [formation, setFormation] = useState<'ORBIT' | 'PHYLLOTAXIS' | 'FRACTAL' | 'MANDALA'>('ORBIT');
   const [symphonicMode, setSymphonicMode] = useState(false);
   const [dataStream, setDataStream] = useState<Array<{
     color: string,
@@ -317,6 +317,7 @@ function App() {
                   <option value="ORBIT">ORBIT</option>
                   <option value="PHYLLOTAXIS">NATURAL</option>
                   <option value="FRACTAL">FRACTAL</option>
+                  <option value="MANDALA">MANDALA</option>
                 </select>
               </div>
             </div>
